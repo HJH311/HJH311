@@ -37,10 +37,23 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 判断当前拦截到的是Controller的方法还是其他资源
+        String requestURI = request.getRequestURI();
         if (!(handler instanceof HandlerMethod)) {
             // 当前拦截到的不是动态方法，直接放行
+            log.info("当前请求路径不是方法，直接放行：{}", requestURI);
             return true;
         }
+
+        log.info("当前请求路径：{}", requestURI);
+        // 匹配所有Knife4j相关路径，直接放行
+        if (requestURI.startsWith("/v3/api-docs") ||
+                requestURI.equals("/doc.html") ||
+                requestURI.startsWith("/webjars/")) {
+            log.info("放行Knife4j路径：{}", requestURI);
+            return true;
+        }
+
+
 
         // 1、从请求头中获取令牌
         String token = request.getHeader(jwtProperties.getAdminTokenName());

@@ -100,5 +100,26 @@ public class EmployeeController {
         PageResult pageResult = employeeService.pageQuery(employeePageQueryDTO);
         return Result.success(pageResult);
     }
+//    非查询类可以不加泛型
+
+    /**
+     * 启用禁用员工账号
+     * @param status
+     * @param id
+     * @return
+     */
+    @PostMapping("/status/{status}")
+    @Operation(summary = "员工状态修改", description = "员工状态修改")
+    public Result startOrStop(
+            @PathVariable Integer status,
+            @RequestParam Long id
+    ){
+        log.info("员工状态：{}，员工id：{}",status,id);
+        if (status == null || id == null) {
+            return Result.error("参数异常");
+        }
+        employeeService.startOrStop(status,id);
+        return Result.success();
+    }
 
 }
