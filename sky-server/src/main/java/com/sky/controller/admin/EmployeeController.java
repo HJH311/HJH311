@@ -61,6 +61,7 @@ public class EmployeeController {
                 .name(employee.getName())
                 .token(token)
                 .build();
+        System.out.println(employeeLoginVO);
 
         return Result.success(employeeLoginVO);
     }

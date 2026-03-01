@@ -40,29 +40,29 @@ public class EmployeeServiceImpl implements EmployeeService {
         String username = employeeLoginDTO.getUsername();
         String password = employeeLoginDTO.getPassword();
 
-        //1、根据用户名查询数据库中的数据
+        System.out.println("=== 1. 开始查询 ===");
         Employee employee = employeeMapper.getByUsername(username);
+        System.out.println("=== 2. 查询完成 ===");
 
-        //2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
         if (employee == null) {
-            //账号不存在
             throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
+        System.out.println("=== 3. 检查空完成 ===");
 
-        //密码比对
-        //
-        password = DigestUtils.md5DigestAsHex(password.getBytes());//记得转数组
+        System.out.println("=== 4. 开始MD5 ===");
+        password = DigestUtils.md5DigestAsHex(password.getBytes());
+        System.out.println("=== 5. MD5完成 ===");
+
         if (!password.equals(employee.getPassword())) {
-            //密码错误
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
+        System.out.println("=== 6. 密码比对完成 ===");
 
         if (employee.getStatus() == StatusConstant.DISABLE) {
-            //账号被锁定
             throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
         }
+        System.out.println("=== 7. 状态检查完成 ===");
 
-        //3、返回实体对象
         return employee;
     }
 /**

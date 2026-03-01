@@ -13,12 +13,33 @@ spring:
       username: ${sky.datasource.username}
       password: ${sky.datasource.password}
 
+      # ========== Druid 连接池核心配置 ==========
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 30000
+
+      # ========== 连接检测配置 ==========
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+
+      # ========== 连接泄漏检测 ==========
+      remove-abandoned: true
+      remove-abandoned-timeout: 60
+      log-abandoned: true
+
+  # ========== 事务超时配置（注意缩进，和 datasource 同级）==========
+  transaction:
+    default-timeout: 30
+
 mybatis:
-  #扫描xml映射mapper配置文件
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.sky.entity
   configuration:
-    #开启驼峰命名
     map-underscore-to-camel-case: true
 
 logging:
@@ -28,13 +49,15 @@ logging:
         mapper: debug
         service: info
         controller: info
+    com.alibaba.druid: debug
 
 sky:
   jwt:
-    # 设置jwt签名加密时使用的秘钥
     admin-secret-key: itcast
-    # 设置jwt过期时间
     admin-ttl: 7200000
-    # 设置前端传递过来的令牌名称
     admin-token-name: token
-
+  minio:
+    endpoint: ${sky.minio.endpoint}
+    access-key: ${sky.minio.access-key}
+    secret-key: ${sky.minio.secret-key}
+    bucket-name: ${sky.minio.bucket-name}
