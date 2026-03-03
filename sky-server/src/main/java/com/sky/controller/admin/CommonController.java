@@ -32,7 +32,7 @@ public class CommonController {
             //截取原始文件名的扩展名
             String extension = filename.substring(filename.lastIndexOf("."));
             String objectName = UUID.randomUUID().toString() + extension;
-            String filePath = minioUtil.upload("sky-itcast",objectName, file);
+            String filePath = minioUtil.upload("dish-thumbnail",objectName, file);
             return Result.success(filePath);
         } catch (Exception e) {
             log.error("文件上传失败：{}", e.getMessage());

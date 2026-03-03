@@ -58,14 +58,15 @@ public class MinioUtil {
                     .build();
             minioClient.putObject(args);
         }
-        String URL = minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .bucket(bucketName)
-                        .object(objectName)
-                        .method(io.minio.http.Method.GET)//指定用get方法访问
-                        .expiry(7, TimeUnit.DAYS)  // 7天
-                        .build());
-        return URL;
+//        String URL = minioClient.getPresignedObjectUrl(
+//                GetPresignedObjectUrlArgs.builder()
+//                        .bucket(bucketName)
+//                        .object(objectName)
+//                        .method(io.minio.http.Method.GET)//指定用get方法访问
+//                        .expiry(7, TimeUnit.DAYS)  // 7天
+//                        .build());
+        return "http://192.168.2.100:9000/" + bucketName + "/" + objectName;
+//        return URL;
     }
     /**
      * 判断文件是否存在
