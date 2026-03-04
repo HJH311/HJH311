@@ -8,10 +8,12 @@ import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.DishFlavor;
+import com.sky.entity.Setmeal;
 import com.sky.exception.DeletionNotAllowedException;
 import com.sky.mapper.DishFlavorMapper;
 import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetmealDishMapper;
+import com.sky.mapper.SetmealMapper;
 import com.sky.result.PageResult;
 import com.sky.service.DishService;
 import com.sky.utils.MinioUtil;
@@ -22,8 +24,10 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.io.ObjectInputFilter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -42,6 +46,9 @@ public class DishServiceImpl implements DishService {
     private SetmealDishMapper setmealDishMapper;
     @Autowired
     private MinioUtil minioUtil;
+    @Autowired
+    private SetmealMapper setmealMapper;
+
     //多个数据表的操作，需要事务
     @Transactional
     @Override
@@ -97,27 +104,107 @@ public class DishServiceImpl implements DishService {
         if(setmealIds != null && setmealIds.size()>0){
             throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
         }
-        //删除菜品数据
-        for (Long id : ids) {
-            //删除图片
-            String imageUrl=dishMapper.deleteImageById(id);
-            while (imageUrl.endsWith("/")){
-                imageUrl=imageUrl.substring(0,imageUrl.length()-1);
+        try {
+            //删除菜品数据
+            List<String> urls = dishMapper.selectByIds(ids);
+            if (urls.isEmpty()){
+                throw new DeletionNotAllowedException("菜品图片 "+ids+" 不存在，无法删除");
             }
-            if(imageUrl !="" && !imageUrl.isEmpty()) {
-                String objectName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
-                if(objectName == null || objectName.isEmpty()){
-                    throw new DeletionNotAllowedException(objectName+"不存在");
-                }
-                String bucketName="dish-thumbnail";
-                minioUtil.delete(bucketName,objectName);
-                dishMapper.deleteById(id);
-                //删除关联的口味数据
-                dishFlavorMapper.deleteByDishId(id);
+            dishMapper.deleteByIds(ids);
+            for (String imageUrl : urls) {
+                while (imageUrl.endsWith("/")){
+                 imageUrl=imageUrl.substring(0,imageUrl.length()-1);
+              }
+               if(StringUtils.hasText(imageUrl)) {
+                   String objectName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
+                   if(objectName == null || objectName.isEmpty()){
+                       throw new DeletionNotAllowedException(objectName+"不存在");
+                   }
+                    String bucketName="dish-thumbnail";
+                   minioUtil.delete(bucketName,objectName);
+               }
             }
+            dishFlavorMapper.deleteByDishIds(ids);
+        } catch (DeletionNotAllowedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    /**
+     * 根据id查询对应的菜品和口味数据
+     * @param id
+     * @return
+     */
+    @Override
+    public DishVO getByIdWithFlavor(Long id) {
+        //根据id查询菜品数据
+        Dish dish = dishMapper.getById(id);
+        //根据菜品id查询口味数据
+        List<DishFlavor> dishFlavors = dishFlavorMapper.getByDishId(id);
+        //将查询到的数据封装VO
+        DishVO dishVO = new DishVO();
+        BeanUtils.copyProperties(dish,dishVO);
+        dishVO.setFlavors(dishFlavors);
+        return dishVO;
+    }
 
+    /**
+     * 修改菜品和口味信息
+     * @param dishDTO
+     */
+    @Override
+    public void updateWithFlavor(DishDTO dishDTO) {
+        Dish dish = new Dish();
+        BeanUtils.copyProperties(dishDTO,dish);
+        dishMapper.update(dish);
+        dishFlavorMapper.deleteByDishId(dishDTO.getId());
+        List<DishFlavor> flavors = dishDTO.getFlavors();
+        Long dishId=dishDTO.getId();
+        if (flavors!=null&& !flavors.isEmpty()){
+            flavors.forEach(dishFlavor -> {
+                dishFlavor.setDishId(dishId);
+            });
+            dishFlavorMapper.insertBatch(flavors);
         }
 
 
+
+    }
+    /**
+     * 修改菜品起售和停售
+     * @param status
+     * @param id
+     */
+    @Override
+    public void startOrStop(Integer status, Long id) {
+        Dish dish=Dish.builder()
+                .id(id)
+                .status(status)
+                .build();
+        dishMapper.update(dish);
+        if(status==StatusConstant.DISABLE){
+            List<Long>dishIds=new ArrayList<>();
+            dishIds.add(id);
+            //select setmeal_id from setmeal_dish where dish_id in ()
+            List<Long> setmealIds=setmealDishMapper.getSetmealIdsByDishIds(dishIds);
+            if(setmealIds!=null&&!setmealIds.isEmpty()){
+                for (Long setmealId : setmealIds) {
+                    Setmeal setmeal = Setmeal.builder()
+                            .id(setmealId)
+                            .status(StatusConstant.DISABLE)
+                            .build();
+                    setmealMapper.update(setmeal);
+                }
+            }
+
+        }
+    }
+
+    @Override
+    public List<Dish> list(Long categoryId) {
+        Dish dish=Dish.builder()
+                .categoryId(categoryId)
+                .status(StatusConstant.ENABLE)
+                .build();
+        return dishMapper.list(dish);
     }
 }

@@ -11,6 +11,8 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface DishMapper {
 
@@ -49,8 +51,28 @@ public interface DishMapper {
     void deleteById(Long id);
     /**
      * 根据id修改菜品数据
-     * @param dish
+     * @param id
      */
     @Select("select image from dish where id=#{id}")
     String deleteImageById(Long id);
+    /**
+     * 根据id批量删除菜品数据,返回images
+     * @param ids
+     */
+    void deleteByIds(List<Long> ids);
+
+    List<String> selectByIds(List<Long> ids);
+    /**
+     * 根据id修改菜品数据
+     * @param dish
+     */
+    @AutoFill(value = OperationType.UPDATE)
+    void update(Dish dish);
+
+    List<Dish> list(Dish dish);
+
+    @Select("select a.* from dish a left join setmeal_dish b on a.id = b.dish_id where b.setmeal_id = #{setmealId}")
+    List<Dish> getBySetmealId(Long setmealId);
+
 }
+

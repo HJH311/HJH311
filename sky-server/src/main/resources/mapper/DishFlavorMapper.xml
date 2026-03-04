@@ -7,5 +7,11 @@
     <foreach collection="flavors" item="flavor" separator=",">
         (#{flavor.dishId}, #{flavor.name}, #{flavor.value})
     </foreach>
-    </insert> 
+    </insert>
+    <delete id="deleteByDishIds">
+        delete from dish_flavor where dish_id in
+        <foreach collection="DishIds" item="dishId" separator="," close=")" open="(" index="">
+            #{dishId}
+        </foreach>
+    </delete>
 </mapper>
