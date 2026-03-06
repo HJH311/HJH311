@@ -32,10 +32,14 @@ spring:
       remove-abandoned-timeout: 60
       log-abandoned: true
 
-  # ========== 事务超时配置（注意缩进，和 datasource 同级）==========
+  # ========== 事务超时配置==========
   transaction:
     default-timeout: 30
-
+  data:
+    redis:
+      host: ${sky.redis.host}
+      port: ${sky.redis.port}
+      database: ${sky.redis.database}
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.sky.entity
